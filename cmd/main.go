@@ -1,8 +1,8 @@
 package main
 
 import (
-	xinsheng "fuck996/cmd/src"
 	"net/http"
+	xinsheng "xinsheng/cmd/src"
 )
 
 func main() {
