@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>菊厂惯例</title>
+    <link rel="stylesheet" type="text/css" href="css/index.css" />
+    <script type="text/javascript" src="js/index.js"></script>
+</head>
+
+<body>
+    <h1 align="center">菊 厂 惯 例</h1>
+    <div align="center" style="margin: 10px 0px;">
+        <table>
+            <tr>
+                <td>天惯例数</td>
+                <td>周惯例数</td>
+                <td>月惯例数</td>
+                <td>年惯例数</td>
+            </tr>
+            <tr>
+                <td>{{.DayPosts}}</td>
+                <td>{{.WeekPosts}}</td>
+                <td>{{.MonthPosts}}</td>
+                <td>{{.YearPosts}}</td>
+            </tr>
+            </tr>
+        </table>
+    </div>
+    {{if gt .DayPosts 0}}
+    <div style="width: 66%; margin: 0px auto;">
+        <h2>今日惯例贴（{{.DayPosts}}篇）</h2>
+        {{range .TodayPosts}}
+        <h3>
+            <a href="{{.Url}}" target="_blank">{{.Title}}</a>
+        </h3>
+        {{.Description}}
+        {{end}}
+    </div>
+    {{end}}
+    <div align="center" style="margin: 10px 0px">
+        <p>注意：以上内容均搜索自<a href="http://xinsheng.huawei.com"target="_blank">华为心声社区</a>，并不保证是真正的“惯例”。</p>
+    </div>
+    </div>
+</body>
+
+</html>
