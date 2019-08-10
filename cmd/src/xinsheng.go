@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -48,13 +49,7 @@ func init() {
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	article := WebPage{
-		DayPosts:   getPostsNum("day"),
-		WeekPosts:  getPostsNum("week"),
-		MonthPosts: getPostsNum("month"),
-		YearPosts:  getPostsNum("year"),
-		TodayPosts: getTodayPosts(),
-	}
+	article := getWebPage()
 	t, err := template.ParseFiles("web/template/index.html")
 	if err != nil {
 		Error.Fatal(err)
@@ -112,7 +107,8 @@ func parseResultNum(doc *goquery.Document) int {
 	return sum
 }
 
-func getPostsNum(postType string) int {
+func getPostsNum(wg *sync.WaitGroup, postType string) int {
+	defer wg.Done()
 	doc, err := parseWebPage(postType)
 	if err != nil {
 		Warning.Println(err)
@@ -121,14 +117,9 @@ func getPostsNum(postType string) int {
 	return parseResultNum(doc)
 }
 
-func getTodayPosts() []Posts {
+func getTodayPosts(doc *goquery.Document) []Posts {
 	result := make([]Posts, 10)
 	todayPost := Posts{}
-	doc, err := parseWebPage("day")
-	if err != nil {
-		Error.Println(err)
-		return nil
-	}
 	doc.Find("div.itemDiv").Each(func(_ int, s *goquery.Selection) {
 		todayPost.Url, _ = s.Find("a").Attr("href")
 		todayPost.Title, _ = s.Find("a").Attr("title")
@@ -136,4 +127,42 @@ func getTodayPosts() []Posts {
 		result = append(result, todayPost)
 	})
 	return result
+}
+
+func getDayPostsAndNum(wg *sync.WaitGroup) (int, []Posts) {
+	defer wg.Done()
+	doc, err := parseWebPage("day")
+	if err != nil {
+		Warning.Println(err)
+		return -1, nil
+	}
+	dayNum := parseResultNum(doc)
+	if dayNum > 0 {
+		return dayNum, getTodayPosts(doc)
+	}
+	return 0, nil
+}
+
+func getWebPage() *WebPage {
+	webPage := new(WebPage)
+	var wg sync.WaitGroup
+	postTypes := []string{"day", "week", "month", "year"}
+	for _, postType := range postTypes {
+		wg.Add(1)
+		go func(postType string) {
+			switch postType {
+			case "day":
+				webPage.DayPosts, webPage.TodayPosts = getDayPostsAndNum(&wg)
+			case "year":
+				webPage.YearPosts = getPostsNum(&wg, postType)
+			case "week":
+				webPage.WeekPosts = getPostsNum(&wg, postType)
+			case "month":
+				webPage.MonthPosts = getPostsNum(&wg, postType)
+			}
+		}(postType)
+	}
+	wg.Wait()
+
+	return webPage
 }
